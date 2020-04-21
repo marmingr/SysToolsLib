@@ -41,7 +41,9 @@
 #                   Control Manager).                                         #
 #                                                                             #
 #                   To create your own service, make a copy of this file and  #
-#                   rename it. The file base name becomes the service name.   #
+#                   rename it. The file base name becomes the service name    #
+#                   so do not use '-' in the name or the add-type function    #
+#                   will fail.                                                #
 #                   Then implement your own service code in the if ($Service) #
 #                   {block} at the very end of this file. See the TO DO       #
 #                   comment there.                                            #
@@ -100,6 +102,9 @@
 #                   Renamed arguments ServiceUser and ServicePassword to the  #
 #                   more standard UserName and Password.                      #
 #                   Also added the standard argument -Credential.             #
+#    2020-04-21 MAG Add Service Version and File info for installation        #
+#                   and version detection                                     #
+#                                                                             #
 #                                                                             #
 ###############################################################################
 #Requires -version 2
@@ -262,7 +267,7 @@ Param(
   [Switch]$Version              # Get this script version
 )
 
-$scriptVersion = "2017-12-10"
+$scriptVersion = "2020-04-21"
 
 # This script name, with various levels of details
 $argv0 = Get-Item $MyInvocation.MyCommand.Definition
@@ -272,8 +277,10 @@ $scriptFullName = $argv0.fullname       # Ex: C:\Temp\PSService.ps1
 
 # Global settings
 $serviceName = $script                  # A one-word name used for net start commands
+$serviceVersion = "1.0.0.0"             #Version format should be 1.0.0.0
 $serviceDisplayName = "A Sample PowerShell Service"
 $ServiceDescription = "Shows how a service can be written in PowerShell"
+$serviceCompanyName = "Test Company Pty Ltd"
 $pipeName = "Service_$serviceName"      # Named pipe name. Used for sending messages to the service task
 # $installDir = "${ENV:ProgramFiles}\$serviceName" # Where to install the service files
 $installDir = "${ENV:windir}\System32"  # Where to install the service files
@@ -705,6 +712,9 @@ Function Receive-PipeHandlerThread () {
 #                   unclosed process was an orphaned process that would       #
 #                   remain until the pid was manually killed or the computer  #
 #                   was rebooted                                              #
+#    2020-04-21 MAG Added file attribute information for installation and     #
+#                   version detection.                                        #
+#                                                                             #
 #                                                                             #
 #-----------------------------------------------------------------------------#
 
@@ -712,9 +722,19 @@ $scriptCopyCname = $scriptCopy -replace "\\", "\\" # Double backslashes. (The fi
 $source = @"
   using System;
   using System.ServiceProcess;
+  using System.Reflection;
   using System.Diagnostics;
   using System.Runtime.InteropServices;                                 // SET STATUS
   using System.ComponentModel;                                          // SET STATUS
+  
+  [assembly: AssemblyProductAttribute("$serviceDisplayName")]
+  [assembly: AssemblyCompanyAttribute("$serviceCompanyName")]
+  [assembly: AssemblyVersion("$serviceVersion")]
+  [assembly: AssemblyFileVersion("$serviceVersion")]
+  [assembly: AssemblyDescriptionAttribute("$ServiceDescription")] 
+  [assembly: AssemblyInformationalVersionAttribute("$serviceVersion")]
+  [assembly: AssemblyTitleAttribute("$serviceDisplayName")]
+  
 
   public enum ServiceType : int {                                       // SET STATUS [
     SERVICE_WIN32_OWN_PROCESS = 0x00000010,
